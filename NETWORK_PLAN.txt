@@ -1,0 +1,41 @@
+LisaCheckers -- network play plan (for REV B), 17-Oct-2026
+
+CHANGED (Tim, 17-Oct-2026, "the other FujiNet games don't need ports"): play through a SERVER every Lisa dials out
+to, like the FujiNet Game System games, so nobody opens a router port.  A small checkers table server on the Pi
+(the same one Harbor Raid will use), HTTP polling: /state?table=T&player=P, /move/11-15 ...  The direct-TCP
+design below stays only as a same-house option.
+
+FINDING
+  No checkers protocol exists in the FujiNet world: fujinet-apps/checkers is an unfinished Atari screen
+  with no networking, and the wiki's "Roman Checkers" article prints the Reversi listing instead.
+  So LisaCheckers defines its own, in the style the FujiNet games already use (Reversi: plain TCP,
+  no server, the host moves first).  Details: reference information\fujinet\GAME_PROTOCOLS_2026-10-17.md.
+
+CONNECTION (through the FujiNet's N1 device, LisaFuji's FnBus unit linked as it is)
+  Host:   N1:TCP://:6502/        then wait for a connection (STATUS until connected) and accept it.
+  Guest:  N1:TCP://<host>:6502/  (typed address, or a name from the FujiNet's host list).
+  Over the internet both players need port 6502 open on the host's router.  For players who cannot,
+  the public relay used by the FujiNet Reversi games (fujinet-servers/examples/two-players,
+  TCP apps.irata.online:1025) can carry the same lines: it sends 0x00 to the first to connect and
+  0x01 to the second, then passes bytes through.  First = host (black).
+
+LINES (ASCII, each ending CR LF; anything else is ignored, so nc / telnet can play by hand)
+  HELLO LISACHECKERS 1 <name>        both sides send it at once, then read the other's
+  MOVE 11-15                         a plain move in the standard numbering
+  MOVE 22x15x8                       a capture, every landing square
+  RESIGN
+  DRAW?        DRAW!  (accept)       DRAW-  (refuse)
+  BYE                                closing the window
+  The host plays black and moves first.  Each side checks every MOVE against its own rules (CkrRules);
+  an illegal one is answered "ERROR <text>" and the game stops with a message.
+
+LISA SIDE
+  Game menu: Play over the Network ... -> Host a game / Join a game (address prompt) / Use the relay.
+  While waiting for the other player the idle loop polls STATUS every half second (no blocking), so
+  menus and Undo-free play keep working; the panel shows "Waiting for <name>".  Undo and Switch Sides
+  are off in a network game.
+  Segments: the network code in its own unit (CKR-NET.TEXT, {$S CKRNet}).
+
+TEST
+  Two LisaEm windows cannot both reach the one PCFuji; test against a PC script (ckr_peer.py) that
+  speaks the same lines and plays random legal moves, then Lisa-to-Lisa on Tim's FPGA and 2/10.

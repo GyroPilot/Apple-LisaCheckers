@@ -1,0 +1,14 @@
+[Unit]
+Description=Checkers table server (LisaCheckers and any FujiNet machine)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=tim
+WorkingDirectory=/opt/lisagames/checkers
+ExecStart=/usr/bin/python3 -u /opt/lisagames/checkers/ckr_server.py 8090
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

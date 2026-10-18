@@ -1,0 +1,204 @@
+unit CkrGlobals;
+
+{ REV B  18-Oct-2026  0.2: the Network menu (menu 4: a table on the     }
+{                      checkers server, leave, draw, resign, another   }
+{                      game, your name, speed); Help and Version move  }
+{                      to 5 and 6.  viewMd, netOn, lastPoll.           }
+
+{ REV A  17-Oct-2026  First increment of LisaCheckers (tool 419317,      }
+{                      pencilled in for Checkers since 13-Oct-2026).     }
+{                      Shared state and the Filer handshake, cloned from }
+{                      RVS-GLOBALS REV D (Lisa Reversi 1.0, proven on    }
+{                      the 2/10).  The rules and the Lisa's player are   }
+{                      in CkrRules (CKR-RULES.TEXT).                     }
+
+{ CKR-GLOBALS.TEXT -- LisaCheckers.                                      }
+{ American checkers on an 8 x 8 board, you against the Lisa.  Black     }
+{ moves first; you are black unless you switch sides.  Level 1-4 sets   }
+{ how far ahead the Lisa looks.                                          }
+
+INTERFACE
+
+uses (*$U UnitStd.obj *)   UnitStd,
+     (*$U UnitHz.obj *)    UnitHz,
+     (*$U Storage.obj *)   Storage,
+     (*$U QuickDraw.obj *) QuickDraw,
+     (*$U Fontmgr.obj *)   FontMgr,
+     (*$U SysCall.obj *)   SysCall,
+     (*$U wm.events.obj *) Events,
+     (*$U wm.folders.obj *) Folders,
+     (*$U wm.menus.obj *)  Menus,
+     (*$U AlertMgr.obj *)  AlertMgr,
+     (*$U WMLstd.obj *)    WMLstd,
+     (*$U WMlCrs.obj *)    WMLCrs,
+     (*$U FilerComm.obj *) FilerComm,
+     (*$U CKR/RULES.OBJ *) CkrRules;
+
+const
+   ckrVersion = 'LisaCheckers 0.2';
+
+   { The window, the same size as Lisa Reversi's: 680 x 300.            }
+   winW      = 680;
+   winH      = 300;
+
+   { The board: 8 x 8 squares of 34 px = 272 x 272, as Reversi's.      }
+   cellPx    = 34;
+   boardX    = 24;            { left edge of the board in the window }
+   boardY    = 18;            { top edge }
+   boardPx   = 272;           { cellPx * 8 }
+   panelX    = 316;           { the status panel starts here }
+
+   maxHist   = 30;            { positions kept for Undo (globals: under 32K; REV B 40 -> 30) }
+   maxLevel  = 4;
+   maxPath   = 12;            { squares clicked for one move }
+   drawPly   = 80;            { 40 moves each with only kings moving: a draw }
+
+   { Menus.  A '-' separator COUNTS as an item position.                 }
+   mFile = 1;                 { "File/Print" }
+      miAsideAll = 1;
+      miAside    = 2;
+      { 3 is a separator }
+      miPutAway  = 4;
+
+   mGame = 2;                 { "Game" }
+      miNew    = 1;           { New Game/N }
+      miUndo   = 2;           { Undo/U }
+      { 3 is a separator }
+      miDots   = 4;           { Show or Hide the Moves/D }
+      miNums   = 5;           { Show or Hide Square Numbers/# }
+      miSides  = 6;           { Switch Sides/S }
+
+   mLevel = 3;                { "Level" }
+
+   mNet = 4;                  { "Network" (REV B) }
+      miNetPlay  = 1;         { Play on the Network .../T }
+      miNetLeave = 2;         { Leave the Table/L }
+      { 3 is a separator }
+      miNetDraw  = 4;         { Offer or Accept a Draw }
+      miNetResgn = 5;         { Resign ... }
+      miNetAgain = 6;         { Another Game }
+      { 7 is a separator }
+      miNetName  = 8;         { Your Name ... }
+      miNet9600  = 9;         { Use 9600 baud }
+      miNet19200 = 10;        { Use 19200 baud }
+
+   mHelp = 5;                 { "Help" }
+      miHowTo  = 1;           { How to Play/H }
+      miKeys   = 2;           { Keys }
+
+   mVer = 6;                  { "Version" }
+      miAbout  = 1;
+
+   lastBarMenu = 6;
+   lastMenu    = 6;
+
+   alertVerNum = 1;
+   alrtWin    = 12;           { game over: you win }
+   alrtLose   = 13;           { game over: the Lisa wins }
+   alrtDraw   = 14;           { game over: a draw }
+   alrtAbout  = 15;           { the About box }
+   alrtHow    = 16;           { How to Play }
+   alrtKeys   = 17;           { Keys }
+   alrtNewG   = 18;           { caution cancel: abandon this game? }
+   alrtResign = 19;           { caution cancel: resign this network game? (REV B) }
+   vwBoard  = 0;              { what the window shows (REV B) }
+   vwTables = 1;
+   vwName   = 2;
+   pollGap  = 3;              { seconds between looks at the server }
+
+   { The heap holds the alert cache (4000 bytes) and the menus: LisaFuji's }
+   { 4,000 integers = 8,000 bytes.  REV A had Reversi's 6,000 and the     }
+   { linker said "More than 32K of globals" (with CkrRules' move lists).   }
+   maxHeap = 4000;
+
+type
+   CkHist = record
+               bd   : CkBoard;
+               quiet : integer;
+            end;
+
+var
+   theEvent  : EventRecord;
+   myWindow  : WindowPtr;
+   toldToDie : boolean;
+   initing   : boolean;
+   myMenus   : array [1..lastMenu] of MenuInfo;
+   allAlerts : TAlertFile;
+   myZone    : array [0..maxHeap] of integer;
+
+   { the game (the board itself is CkrRules' ckBd and ckSide) }
+   human     : integer;       { ckBlack or ckWhite }
+   lisaC     : integer;       { -human }
+   hist      : array [1..maxHist] of CkHist;
+   nHist     : integer;
+   level     : integer;       { 1..4 }
+   lvDepth   : array [1..maxLevel] of integer;
+   lvBudget  : array [1..maxLevel] of longint;
+   showDots  : boolean;       { where the picked piece can go }
+   showNums  : boolean;       { the square numbers 1 to 32 }
+   gameOver  : boolean;
+   started   : boolean;
+   thinking  : boolean;
+   legal     : CkList;        { your legal moves, this turn }
+   nLegal    : integer;
+   path      : array [0..maxPath] of integer;   { squares clicked so far }
+   nPath     : integer;       { -1 = nothing picked }
+   cursorR   : integer;       { keyboard cursor, screen rows and columns 0..7 }
+   cursorC   : integer;
+   lastYou   : CkMove;
+   lastLisa  : CkMove;
+   haveYou   : boolean;
+   haveLisa  : boolean;
+   nodes     : longint;       { positions the Lisa looked at, last move }
+   status    : Str255;        { the message line in the panel }
+   idleCnt   : longint;
+
+   { the network game (REV B) }
+   myVol     : E_Name;
+   viewMd    : integer;       { vwBoard, vwTables, vwName }
+   netOn     : boolean;       { sitting at a table on the server }
+   lastPoll  : longint;       { seconds, from FnSecs }
+   lastMvCnt : integer;       { the server's move count at the last look }
+   nameTxt   : string[8];     { the name being typed }
+
+procedure HandleFilerOp (var wantsOpen : boolean);
+
+
+IMPLEMENTATION
+
+procedure HandleFilerOp {var wantsOpen : boolean};
+var fx  : FilerExt;
+    err : integer;
+begin
+   wantsOpen := false;
+   GetAddParms(err, theEvent, fx);
+
+   case fx.theFlrOp of
+
+      fcNone :
+         wantsOpen := true;              { the user opened the tool }
+
+      fcResume :
+         TellFiler(err, docClosd, internalError, theEvent.who);
+
+      fcClose, fcSuspend, fcShred :
+         begin
+            myWindow := nil;
+            TellFiler(err, docClosd, allOK, theEvent.who)
+         end;
+
+      fcCopy, fcPut :
+         TellFiler(err, docNotXfered, internalError, theEvent.who);
+
+      fcDfClose :
+         TellFiler(err, dfClosed, allOK, theEvent.who);
+
+      fcTerminate :
+         toldToDie := true;
+
+      otherwise
+
+   end
+end;
+
+end.

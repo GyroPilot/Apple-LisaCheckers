@@ -1,0 +1,29 @@
+$EXEC
+${ REV B  18-Oct-2026  0.2: FNBUS (LisaFuji's) and NET added.             }
+${ REV A  17-Oct-2026  LisaCheckers 0.1: cloned from the Reversi REV D file. }
+${==========================================================================}
+${ CKR-COMP.TEXT -- compile LisaCheckers: RULES, GLOBALS, then MAIN.        }
+${==========================================================================}
+F{ilemgr}D{elete}CKR/RULES.OBJ  Y{es}
+        D{elete}CKR/FNBUS.OBJ  Y{es}
+        D{elete}CKR/NET.OBJ  Y{es}
+        D{elete}CKR/GLOBALS.OBJ  Y{es}
+        D{elete}CKR/MAIN.OBJ  Y{es}
+        Q{uit}
+${                                                                          }
+P{ascal Compile}CKR/RULES.TEXT
+{no listing file - this comment-only line is the [RETURN] answer}
+CKR/RULES.OBJ
+P{ascal Compile}CKR/FNBUS.TEXT
+{no listing file}
+CKR/FNBUS.OBJ
+P{ascal Compile}CKR/NET.TEXT
+{no listing file}
+CKR/NET.OBJ
+P{ascal Compile}CKR/GLOBALS.TEXT
+{no listing file - this comment-only line is the [RETURN] answer}
+CKR/GLOBALS.OBJ
+P{ascal Compile}CKR/MAIN.TEXT
+{no listing file}
+CKR/MAIN.OBJ
+$ENDEXEC

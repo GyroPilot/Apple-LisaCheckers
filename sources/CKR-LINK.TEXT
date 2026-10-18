@@ -1,0 +1,23 @@
+$EXEC
+${ REV B  18-Oct-2026  0.2: FNBUS.OBJ and NET.OBJ.                        }
+${ REV A  17-Oct-2026  LisaCheckers 0.1: cloned from the Reversi REV D file. }
+${==========================================================================}
+${ CKR-LINK.TEXT -- link LisaCheckers. Intrinsic units (QuickDraw, the    }
+${ WM units, AlertMgr, SysCall ...) are NOT named: the linker finds them   }
+${ through INTRINSIC.LIB.  Same recipe as PZL-LINK / LFU-LINK / SLD-LINK.  }
+${==========================================================================}
+F{ilemgr}D{elete}CKR/CKR.OBJ  Y{es}
+        Q{uit}
+${                                                                          }
+L{inker}CKR/MAIN.OBJ
+CKR/GLOBALS.OBJ
+CKR/RULES.OBJ
+CKR/NET.OBJ
+CKR/FNBUS.OBJ
+IOSPASLIB.OBJ
+SYS1LIB.OBJ
+SYS2LIB.OBJ
+{end of the input list - this comment-only line is the blank answer}
+{no listing file - second blank answer}
+CKR/CKR.OBJ
+$ENDEXEC

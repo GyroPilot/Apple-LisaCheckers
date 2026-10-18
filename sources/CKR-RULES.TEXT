@@ -1,0 +1,448 @@
+unit CkrRules;
+
+{ REV A  17-Oct-2026  LisaCheckers (tool 419317): the rules and the     }
+{                      Lisa's player.  New unit.  NOT yet compiled on a }
+{                      Lisa; checked on the PC (perft and self-play).   }
+
+{ CKR-RULES.TEXT -- American checkers (English draughts), the standard  }
+{ rules: an 8 x 8 board, men move one square diagonally forward, a man  }
+{ that reaches the far row is crowned a king and its move ends there,   }
+{ kings move one square in any diagonal direction, captures are         }
+{ compulsory and a capturing piece must keep jumping while it can (the  }
+{ player chooses among capture sequences, not the longest), and a side  }
+{ with no legal move loses.  Black moves first.                          }
+{                                                                        }
+{ The board uses the standard numbering 1 to 32 of the dark squares,     }
+{ Black's men starting on 1 to 12 and moving toward 32, White's on 21   }
+{ to 32 moving toward 1, so moves can be written "11-15" or "22x15x8".  }
+{ Square n is row (n-1) div 4 (0 = Black's back row); in even rows the  }
+{ dark squares are columns 1,3,5,7, in odd rows 0,2,4,6.                 }
+{                                                                        }
+{ The Lisa's player is a negamax search with alpha-beta cut-offs to a   }
+{ fixed depth, captures searched further at the leaves (so it does not  }
+{ stop in the middle of an exchange), and a count of material, kings,   }
+{ advancement, the centre and the back row.  This unit never touches    }
+{ the screen or the network.                                             }
+
+INTERFACE
+
+uses (*$U UnitStd.obj *)   UnitStd,
+     (*$U UnitHz.obj *)    UnitHz,
+     (*$U Storage.obj *)   Storage,
+     (*$U QuickDraw.obj *) QuickDraw;
+
+const
+   ckBlack  = 1;              { sides; a man is 1 or -1, a king 2 or -2 }
+   ckWhite  = -1;
+   ckDead   = 3;              { a piece already jumped in this move }
+   ckMaxMv  = 40;             { moves in one list (REV B: 48 -> 40 for the network unit's globals) }
+   ckMaxHop = 11;             { squares in one capture sequence }
+   ckMaxPly = 9;              { search depth, captures included (globals: under 32K) }
+   ckInf    = 30000;
+   ckWin    = 20000;
+
+type
+   CkBoard = array [1..32] of integer;
+   CkMove  = record
+                nHop : integer;                      { squares in hop }
+                nCap : integer;
+                hop  : packed array [0..ckMaxHop] of 0..32;   { hop[0] = from }
+                cap  : packed array [1..ckMaxHop] of 0..32;   { squares jumped }
+             end;
+   CkList  = array [1..ckMaxMv] of CkMove;
+
+var
+   ckBd    : CkBoard;         { the game }
+   ckSide  : integer;         { who moves next }
+   ckNb    : array [1..32, 0..3] of integer;   { neighbour by direction; 0 = off }
+   ckNodes : longint;         { positions looked at by the last CkThink }
+   ckSeed  : longint;         { for choosing among equal moves }
+   ckQuiet : integer;         { moves since the last capture or man move }
+   ckBudget: longint;         { CkThink stops deepening past this many positions }
+   ckStop  : boolean;         { the budget ran out inside a search }
+   ckDone  : integer;         { the depth CkThink finished }
+
+   { work space for the search: one board and one list per depth }
+   ckWBd   : array [0..ckMaxPly] of CkBoard;
+   ckWL    : array [0..ckMaxPly] of CkList;
+
+procedure CkInit;
+procedure CkStart;
+procedure CkGen   (var bd : CkBoard; side : integer; var list : CkList; var n : integer);
+procedure CkDo    (var bd : CkBoard; var mv : CkMove);
+function  CkEval  (var bd : CkBoard; side : integer) : integer;
+function  CkThink (depth : integer; budget : longint; var best : CkMove) : integer;
+procedure CkText  (var mv : CkMove; var s : Str255);
+function  CkRow   (sq : integer) : integer;
+function  CkCol   (sq : integer) : integer;
+function  CkSq    (row, col : integer) : integer;
+
+
+IMPLEMENTATION
+
+{$S CKRRules}
+
+function CkRow {sq : integer} : integer;
+begin
+   CkRow := (sq - 1) div 4
+end;
+
+function CkCol {sq : integer} : integer;
+var r : integer;
+begin
+   r := (sq - 1) div 4;
+   if r mod 2 = 0 then
+      CkCol := 2 * ((sq - 1) mod 4) + 1
+   else
+      CkCol := 2 * ((sq - 1) mod 4)
+end;
+
+function CkSq {row, col : integer} : integer;
+{ The square at row, col (0 to 7); 0 for a light square or off the board. }
+begin
+   CkSq := 0;
+   if (row < 0) or (row > 7) or (col < 0) or (col > 7) then
+      exit(CkSq);
+   if (row + col) mod 2 = 1 then
+      CkSq := row * 4 + col div 2 + 1
+end;
+
+procedure CkInit;
+{ The neighbour table.  Direction 0 = toward row 7 and column - 1,     }
+{ 1 = toward row 7 and column + 1, 2 = toward row 0 and column - 1,    }
+{ 3 = toward row 0 and column + 1.  Black's men use 0 and 1.            }
+var sq, r, c : integer;
+begin
+   for sq := 1 to 32 do begin
+      r := CkRow(sq);
+      c := CkCol(sq);
+      ckNb[sq, 0] := CkSq(r + 1, c - 1);
+      ckNb[sq, 1] := CkSq(r + 1, c + 1);
+      ckNb[sq, 2] := CkSq(r - 1, c - 1);
+      ckNb[sq, 3] := CkSq(r - 1, c + 1)
+   end;
+   ckSeed := 12345;
+   CkStart
+end;
+
+procedure CkStart;
+var sq : integer;
+begin
+   for sq := 1 to 32 do
+      if sq <= 12 then
+         ckBd[sq] := ckBlack
+      else if sq >= 21 then
+         ckBd[sq] := ckWhite
+      else
+         ckBd[sq] := 0;
+   ckSide := ckBlack;
+   ckQuiet := 0
+end;
+
+function CkCrown (sq, side : integer) : boolean;
+{ sq is on side's crowning row. }
+begin
+   if side = ckBlack then
+      CkCrown := sq >= 29
+   else
+      CkCrown := sq <= 4
+end;
+
+procedure CkGen {var bd : CkBoard; side : integer; var list : CkList; var n : integer};
+{ Every legal move for side: the capture sequences if there are any,   }
+{ otherwise the plain moves.                                            }
+var sq, d, t : integer;
+    p        : integer;
+    d0, d1   : integer;
+    cur      : CkMove;
+
+   procedure Jumps (at, piece : integer);
+   { Extend cur from square at, piece (1, 2, -1 or -2) moving.  The     }
+   { piece's own start square is empty during the search, and jumped    }
+   { pieces are ckDead, so none is jumped twice.                         }
+   var dd, m, l   : integer;
+       lo, hi     : integer;
+       more       : boolean;
+       saved      : integer;
+   begin
+      more := false;
+      if abs(piece) = 2 then begin
+         lo := 0;
+         hi := 3
+      end
+      else if piece > 0 then begin
+         lo := 0;
+         hi := 1
+      end
+      else begin
+         lo := 2;
+         hi := 3
+      end;
+      for dd := lo to hi do begin
+         m := ckNb[at, dd];
+         if m <> 0 then begin
+            l := ckNb[m, dd];
+            if l <> 0 then
+               if (bd[l] = 0) and (bd[m] <> ckDead) and (bd[m] * piece < 0)
+                  and (cur.nHop < ckMaxHop) then begin
+                  more := true;
+                  saved := bd[m];
+                  bd[m] := ckDead;
+                  cur.nHop := cur.nHop + 1;
+                  cur.hop[cur.nHop] := l;
+                  cur.nCap := cur.nCap + 1;
+                  cur.cap[cur.nCap] := m;
+                  if (abs(piece) = 1) and CkCrown(l, side) then begin
+                     if n < ckMaxMv then begin        { crowned: the move ends }
+                        n := n + 1;
+                        list[n] := cur
+                     end
+                  end
+                  else
+                     Jumps(l, piece);
+                  cur.nHop := cur.nHop - 1;
+                  cur.nCap := cur.nCap - 1;
+                  bd[m] := saved
+               end
+         end
+      end;
+      if (not more) and (cur.nCap > 0) and (n < ckMaxMv) then begin
+         n := n + 1;
+         list[n] := cur
+      end
+   end;
+
+begin
+   n := 0;
+   for sq := 1 to 32 do begin               { captures first }
+      p := bd[sq];
+      if p * side > 0 then begin
+         cur.nHop := 0;
+         cur.nCap := 0;
+         cur.hop[0] := sq;
+         bd[sq] := 0;
+         Jumps(sq, p);
+         bd[sq] := p
+      end
+   end;
+   if n > 0 then
+      exit(CkGen);
+   if side = ckBlack then begin
+      d0 := 0;
+      d1 := 1
+   end
+   else begin
+      d0 := 2;
+      d1 := 3
+   end;
+   for sq := 1 to 32 do begin
+      p := bd[sq];
+      if p * side > 0 then
+         for d := 0 to 3 do
+            if (abs(p) = 2) or (d = d0) or (d = d1) then begin
+               t := ckNb[sq, d];
+               if t <> 0 then
+                  if (bd[t] = 0) and (n < ckMaxMv) then begin
+                     n := n + 1;
+                     list[n].nHop := 1;
+                     list[n].hop[0] := sq;
+                     list[n].hop[1] := t;
+                     list[n].nCap := 0
+                  end
+            end
+   end
+end;
+
+procedure CkDo {var bd : CkBoard; var mv : CkMove};
+{ Make the move on bd: lift, take the jumped pieces, land, crown. }
+var p, i, t : integer;
+begin
+   p := bd[mv.hop[0]];
+   bd[mv.hop[0]] := 0;
+   for i := 1 to mv.nCap do
+      bd[mv.cap[i]] := 0;
+   t := mv.hop[mv.nHop];
+   if (p = ckBlack) and (t >= 29) then
+      p := 2
+   else if (p = ckWhite) and (t <= 4) then
+      p := -2;
+   bd[t] := p
+end;
+
+function CkEval {var bd : CkBoard; side : integer} : integer;
+{ The position as side sees it: men 100, kings 160, a man's progress    }
+{ toward its crowning row, the four centre squares, and the back row    }
+{ kept while the other side still has men.                               }
+var sq, p, r, v : integer;
+    bm, wm      : integer;
+begin
+   v := 0;
+   bm := 0;
+   wm := 0;
+   for sq := 1 to 32 do begin
+      p := bd[sq];
+      if p <> 0 then begin
+         r := (sq - 1) div 4;
+         if p = 1 then begin
+            v := v + 100 + 3 * r;
+            bm := bm + 1
+         end
+         else if p = -1 then begin
+            v := v - 100 - 3 * (7 - r);
+            wm := wm + 1
+         end
+         else if p = 2 then
+            v := v + 160
+         else if p = -2 then
+            v := v - 160;
+         if (sq = 14) or (sq = 15) or (sq = 18) or (sq = 19) then begin
+            if p > 0 then v := v + 6 else v := v - 6
+         end
+      end
+   end;
+   if wm > 0 then begin                     { Black's back row: 1 and 3 }
+      if bd[1] = 1 then v := v + 8;
+      if bd[3] = 1 then v := v + 8
+   end;
+   if bm > 0 then begin                     { White's back row: 30 and 32 }
+      if bd[30] = -1 then v := v - 8;
+      if bd[32] = -1 then v := v - 8
+   end;
+   CkEval := v * side
+end;
+
+function CkRand (n : integer) : integer;
+{ A number from 1 to n. }
+begin
+   ckSeed := (ckSeed * 1103 + 12345) mod 32749;
+   if ckSeed < 0 then ckSeed := -ckSeed;
+   CkRand := ckSeed mod n + 1
+end;
+
+function CkSearch (ply, depth, side, alpha, beta : integer) : integer;
+{ Negamax with alpha-beta on ckWBd[ply].  Below depth 0 only captures   }
+{ are followed (a capture is compulsory, so it is the whole list).      }
+var n, i, v, best : integer;
+    capt          : boolean;
+begin
+   ckNodes := ckNodes + 1;
+   if ckNodes > ckBudget then begin          { out of time: the caller drops this depth }
+      ckStop := true;
+      CkSearch := 0;
+      exit(CkSearch)
+   end;
+   CkGen(ckWBd[ply], side, ckWL[ply], n);
+   if n = 0 then begin
+      CkSearch := -ckWin + ply;              { no move: lost; sooner is worse }
+      exit(CkSearch)
+   end;
+   capt := ckWL[ply][1].nCap > 0;
+   if (ply >= ckMaxPly) or ((depth <= 0) and (not capt)) then begin
+      CkSearch := CkEval(ckWBd[ply], side);
+      exit(CkSearch)
+   end;
+   best := -ckInf;
+   for i := 1 to n do begin
+      ckWBd[ply + 1] := ckWBd[ply];
+      CkDo(ckWBd[ply + 1], ckWL[ply][i]);
+      v := -CkSearch(ply + 1, depth - 1, -side, -beta, -alpha);
+      if v > best then best := v;
+      if best > alpha then alpha := best;
+      if alpha >= beta then begin
+         CkSearch := best;
+         exit(CkSearch)
+      end
+   end;
+   CkSearch := best
+end;
+
+function CkThink {depth : integer; budget : longint; var best : CkMove} : integer;
+{ The Lisa's move for ckSide on ckBd.  Iterative deepening: depth 1, 2, }
+{ ... up to depth, each started with the last depth's best move first,  }
+{ and stopped when more than budget positions have been looked at (the  }
+{ unfinished depth is dropped; ckDone says which depth was finished).   }
+{ Of moves that score the same, one is taken at random.  0 = no move.   }
+var n, i, v, top, ties, d : integer;
+    pick                   : integer;
+    sw                     : CkMove;
+begin
+   ckNodes := 0;
+   ckStop := false;
+   ckBudget := budget;
+   ckDone := 0;
+   ckWBd[0] := ckBd;
+   CkGen(ckWBd[0], ckSide, ckWL[0], n);
+   CkThink := 0;
+   if n = 0 then
+      exit(CkThink);
+   best := ckWL[0][1];
+   CkThink := n;
+   if n = 1 then
+      exit(CkThink);                         { forced: no need to look }
+   d := 1;
+   while (d <= depth) and (not ckStop) do begin
+      top := -ckInf;
+      ties := 0;
+      pick := 1;
+      i := 1;
+      while (i <= n) and (not ckStop) do begin
+         ckWBd[1] := ckWBd[0];
+         CkDo(ckWBd[1], ckWL[0][i]);
+         v := -CkSearch(1, d - 1, -ckSide, -ckInf, -top + 1);
+         if not ckStop then
+            if v > top then begin
+               top := v;
+               pick := i;
+               ties := 1
+            end
+            else if v = top then begin
+               ties := ties + 1;
+               if CkRand(ties) = 1 then
+                  pick := i
+            end;
+         i := i + 1
+      end;
+      if not ckStop then begin               { this depth finished: keep its move }
+         best := ckWL[0][pick];
+         ckDone := d;
+         if pick > 1 then begin              { and look at it first next time }
+            sw := ckWL[0][1];
+            ckWL[0][1] := ckWL[0][pick];
+            ckWL[0][pick] := sw
+         end
+      end;
+      d := d + 1
+   end
+end;
+
+procedure CkText {var mv : CkMove; var s : Str255};
+{ The move in the usual notation: 11-15, or 22x15x8 for captures. }
+var i  : integer;
+    t  : Str255;
+    one : string[1];
+
+   procedure Num (n : integer);
+   begin
+      one := ' ';
+      if n >= 10 then begin
+         one[1] := chr(48 + n div 10);
+         t := concat(t, one)
+      end;
+      one[1] := chr(48 + n mod 10);
+      t := concat(t, one)
+   end;
+
+begin
+   t := '';
+   Num(mv.hop[0]);
+   for i := 1 to mv.nHop do begin
+      if mv.nCap > 0 then
+         t := concat(t, 'x')
+      else
+         t := concat(t, '-');
+      Num(mv.hop[i])
+   end;
+   s := t
+end;
+
+end.

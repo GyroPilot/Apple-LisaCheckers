@@ -1,0 +1,26 @@
+$EXEC
+${ REV A  17-Oct-2026  LisaCheckers 0.1: cloned from the Reversi REV D file. }
+${==========================================================================}
+${ CKR-MAKE.TEXT -- build LisaCheckers: compile, link, put the Obj and     }
+${ ICON files in place as tool 419317 (pencilled in for Checkers on the      }
+${ LisaList2 list), compile the phrase file.  THEN run CKR/INSTALL.  The     }
+${ tool number appears only here and in CKR/INSTALL.                       }
+${                                                                          }
+${ CKR/ICON.BIN must be on the disk before this runs.                       }
+${==========================================================================}
+$SUBMIT CKR/COMP
+$SUBMIT CKR/LINK
+${                                                                          }
+F{ilemgr}D{elete}~{T419317~}Obj
+Y{es}D{elete}~{T419317~}PHRASE
+Y{es}D{elete}~{T419317~}ICON
+Y{es}C{opy}CKR/CKR.OBJ
+~{T419317~}Obj
+C{opy}CKR/ICON.BIN
+~{T419317~}ICON
+Q{uit}
+${                                                                          }
+R{un}Alert
+CKR/ALERTS.TEXT
+~{T419317~}
+$ENDEXEC

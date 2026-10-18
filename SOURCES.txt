@@ -1,0 +1,11 @@
+LisaCheckers 0.2 (REV B) -- what is here
+
+sources/CKR-RULES.TEXT    unit CkrRules: the board, move generation (compulsory captures, multi-jumps, crowning),
+                          the search (negamax, alpha-beta, iterative deepening within a position budget)
+sources/CKR-NET.TEXT      unit CkrNet: the checkers server through the FujiNet (text replies read as they arrive)
+sources/CKR-FNBUS.TEXT    unit FnBus: Serial B and the FujiBus protocol (LisaFuji)
+sources/CKR-GLOBALS.TEXT  unit CkrGlobals: constants, menu numbers, state, the Filer handshake
+sources/CKR-MAIN.TEXT     the program: board, clicks, panel, the network game, menus, events
+sources/CKR-ALERTS.TEXT, CKR-COMP.TEXT, CKR-LINK.TEXT, CKR-MAKE.TEXT, CKR-INSTALL.TEXT   alerts, menus, Workshop execs
+server/                   the table server, its test players, the systemd unit
+tools/                    Free Pascal checks of the rules (perft, self-play, search sizes)

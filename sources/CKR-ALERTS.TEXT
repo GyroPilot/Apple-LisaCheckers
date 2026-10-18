@@ -1,0 +1,147 @@
+; ==========================================================================
+;  CKR-ALERTS.TEXT -- phrase-file source for LisaCheckers (419317).
+;  Compiled by the Workshop 'Alert' tool into T419317PHRASE.
+;  Comments on their OWN lines; blank lines are STRUCTURAL; alert numbers
+;  ascend and 1 and 2 are REQUIRED; each section ends with a lone 0.
+; ==========================================================================
+;
+; REV B -- 18-Oct-2026: 0.2.  Network menu is menu 4; Help and Version move to 5 and 6.
+;   Alert 19 (resign?).  About and How to Play mention the network.
+; REV A -- 17-Oct-2026: first build, cloned from RVS-ALERTS REV D.  Menus
+;   are matched BY POSITION against the mi* constants in CKR-GLOBALS; a '-'
+;   separator counts as a position.  Alert lines under 48 characters (the
+;   Alert manager wraps there: the Reversi REV B lesson).  Cache 4000.
+;
+; ---- FILE HEADER ---------------------------------------------------------
+1
+4
+4000
+?
+Wait
+Stop
+Note
+Caution
+Cancel
+OK
+
+; ==== ALERTS ==============================================================
+;
+1 note alert
+LisaCheckers could not find the message that belongs here.
+If you cannot proceed, mention the number ^N.
+
+2 stop alert
+LisaCheckers is having trouble reaching the disk that holds the
+tool.^L^L
+Put your documents away one at a time, or press the on-off button to
+save them all.
+
+12 note alert
+Game over -- you win!^L^L
+N starts a new game.
+
+13 note alert
+Game over -- the Lisa wins.^L^L
+N starts a new game; U takes back your last move
+if you want to try a different ending.
+
+14 note alert
+Game over -- a draw.^L^L
+Forty moves each went by with only kings moving
+and nothing taken.  N starts a new game.
+
+15 note alert
+LisaCheckers 0.2   (18 October 2026)^L^L
+American checkers on the Apple Lisa, you against
+the Lisa.  You play black and move first; Switch
+Sides in the Game menu swaps that.  The Level menu
+sets how far ahead the Lisa looks.  The Network
+menu plays people on other Lisas and FujiNet
+machines through the checkers server.^L^L
+See the Help menu: How to Play (H) and Keys.^L
+Tool 419317.  T. O'Connor (bmwcyclist), 2026.
+
+16 note alert
+How to play^L^L
+Pieces move one square diagonally forward onto an
+empty dark square.  A piece jumps an enemy piece
+next to it when the square beyond is empty, and
+takes it.  Jumps must be taken, and a piece keeps
+jumping while it can.  A piece that reaches the far
+row becomes a king (a ring in the middle) and may
+then move and jump backward too.^L^L
+Click your piece, then the square it goes to; for a
+jump, where it lands.  Dots show where it can go.^L^L
+You win when the Lisa cannot move: all its pieces
+taken or blocked.
+
+17 note alert
+Keys^L^L
+Mouse ... click a piece, then where it goes^L
+4 6 8 2 (keypad) or J L I K ... move the cursor^L
+RETURN or SPACE ... pick the cursor square^L
+N ... new game (Apple-N)^L
+U ... take back your last move (Apple-U)^L
+D ... show or hide the dots (Apple-D)^L
+# ... show or hide the square numbers^L
+S ... switch sides: new game, Lisa opens^L
+Apple-1 to Apple-4 ... the Lisa's level^L
+H ... How to Play (Apple-H)
+
+18 caution cancel alert
+Start a new game?^L^L
+The game in progress is abandoned.
+
+19 caution cancel alert
+Resign this game?^L^L
+Your opponent wins it.
+
+0
+
+; ==== MENUS ===============================================================
+1
+File/Print
+Set Aside Everything
+Set Aside "LisaCheckers"
+-
+Save & Put Away
+
+2
+Game
+New Game/N
+Undo/U
+-
+Show or Hide the Moves/D
+Show or Hide Square Numbers
+Switch Sides/S
+
+3
+Level
+1  Easy/1
+2  Normal/2
+3  Hard/3
+4  Hardest/4
+
+4
+Network
+Play on the Network .../T
+Leave the Table/L
+-
+Offer or Accept a Draw
+Resign ...
+Another Game
+-
+Your Name ...
+Use 9600 baud
+Use 19200 baud
+
+5
+Help
+How to Play/H
+Keys
+
+6
+Version
+About LisaCheckers
+
+0
