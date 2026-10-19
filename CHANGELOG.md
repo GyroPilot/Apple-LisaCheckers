@@ -1,5 +1,8 @@
 # LisaCheckers changelog
 
+## 0.2 REV D -- 19 Oct 2026
+- After a failed network reply to a move the game no longer freezes: it looks at the server again at once.
+  Six network moves in LisaEm against the Pi's server, captures included.
 ## 0.2 REV C -- 18 Oct 2026
 - Network reads of 128 bytes, not 256 (in LisaEm a 256-byte read took 9-12 s and could time out).
 ## 0.2 REV B -- 18 Oct 2026 -- built, tested in LisaEm

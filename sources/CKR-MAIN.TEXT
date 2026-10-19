@@ -625,7 +625,10 @@ var s : Str255;
 begin
    CkText(mv, s);
    thinking := true;
-   if NetAsk(concat('/move/', s)) then ;
+   if not NetAsk(concat('/move/', s)) then begin
+      thinking := false;                 { REV D: a failed reply must not stop the polling }
+      lastPoll := NowSecs - pollGap      { look again at once: the server may have the move }
+   end
 end;
 
 procedure YouMove (var mv : CkMove);
