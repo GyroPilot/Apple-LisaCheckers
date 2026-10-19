@@ -1,5 +1,8 @@
 unit CkrNet;
 
+{ REV C  18-Oct-2026  Network READs of 128 bytes, not 256 (LisaEm: a     }
+{                      256-byte READ took 9-12 s and could time out).    }
+
 { REV B  18-Oct-2026  LisaCheckers 0.2: play over the network.  New unit. }
 {                      NOT yet compiled on a Lisa.                        }
 
@@ -311,7 +314,7 @@ begin
          end
       end
       else begin
-         k := fnRdMax;
+         k := 128;                        { REV C: 256-byte reads timed out in LisaEm (pitfall 29) }
          if fnWait < k then
             k := fnWait;
          rc := FnNRead(k);
