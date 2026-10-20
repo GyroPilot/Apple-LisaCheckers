@@ -7,9 +7,9 @@ Tool number **419317** in the GyroPilot series. Lisa Pascal, Workshop 3.0, Lisa 
 
 ## Status
 
-**0.2 (REV C)** -- built and tested in LisaEm: play against the Lisa, and network play against a scripted player on the
-public server (table list, moves both ways, reconnecting, resign, another game). Waiting for the Lisa 2/10, where
-the levels' thinking times will be set (`releases/LISACHECKERS_0_2_TEST.dc42`).
+**0.2 (REV F) -- released 20 October 2026.**  Tested on a Lisa 2/10: against the Lisa, and a whole network
+game through the table server (41 moves, the game-over alert, Save & Put Away).  Release floppy:
+`releases/LISACHECKERS_0_2.dc42`.
 
 ## Playing
 

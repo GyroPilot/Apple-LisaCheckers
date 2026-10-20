@@ -1,5 +1,9 @@
 # LisaCheckers changelog
 
+## 0.2 REV F -- 20 Oct 2026 -- RELEASE
+- After a move only the squares that changed are redrawn (no whole-board wipe).
+- Tested on a Lisa 2/10: against the Lisa (level 2), and a whole network game through the Pi's table
+  server, with the game-over alert and Save & Put Away.
 ## 0.2 REV E -- 20 Oct 2026
 - Network games: the window is repainted only when something changed (it flashed every few seconds on
   the 2/10 while waiting); a 'Game over -- you win!' / lose / draw alert at the end; a look at the server

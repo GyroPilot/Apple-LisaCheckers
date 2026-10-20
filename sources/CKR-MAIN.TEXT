@@ -286,6 +286,51 @@ begin
    end
 end;
 
+function SqSig (sr, sc : integer) : integer;
+{ REV F.  Everything DrawSq shows on one square, as one number. }
+var sq, g, i : integer;
+    mark     : boolean;
+begin
+   sq := ScrSq(sr, sc);
+   if sq = 0 then begin
+      SqSig := -1;
+      exit(SqSig)
+   end;
+   g := ckBd[sq] + 3;                      { 1..5 }
+   if ckBd[sq] = 0 then
+      if showDots and (not thinking) and (not gameOver) then
+         if CanGo(sq) then
+            g := g + 8;
+   if nPath >= 0 then
+      if Picked(sq) then
+         g := g + 16;
+   mark := false;
+   if haveLisa then
+      for i := 0 to lastLisa.nHop do
+         if lastLisa.hop[i] = sq then mark := true;
+   if mark then
+      g := g + 32;
+   if (sr = cursorR) and (sc = cursorC) then
+      g := g + 64;
+   if showNums then
+      g := g + 128;
+   SqSig := g
+end;
+
+procedure DrawDiff;
+{ REV F.  Repaint only the squares whose look changed. }
+var sr, sc, g : integer;
+begin
+   for sr := 0 to 7 do
+      for sc := 0 to 7 do begin
+         g := SqSig(sr, sc);
+         if g <> shownSig[sr, sc] then begin
+            DrawSq(sr, sc);
+            shownSig[sr, sc] := g
+         end
+      end
+end;
+
 procedure DrawBoard;
 var i, x, y : integer;
     sr, sc  : integer;
@@ -302,8 +347,11 @@ begin
       LineTo(boardX + boardPx, y)
    end;
    for sr := 0 to 7 do
-      for sc := 0 to 7 do
-         DrawSq(sr, sc)
+      for sc := 0 to 7 do begin
+         DrawSq(sr, sc);
+         shownSig[sr, sc] := SqSig(sr, sc)     { REV F }
+      end;
+   boardOk := true
 end;
 
 procedure DrawPanel;
@@ -424,6 +472,7 @@ var r    : Rect;
     i, y : integer;
     s, t : Str255;
 begin
+   boardOk := false;                       { REV F: the board is gone }
    SetRect(r, 0, 0, winW, winH);
    EraseRect(r);
    MoveTo(12, 20);
@@ -460,7 +509,10 @@ begin
       DrawList;
       exit(DrawShow)
    end;
-   DrawBoard;
+   if boardOk then                         { REV F: only what changed }
+      DrawDiff
+   else
+      DrawBoard;
    DrawPanel
 end;
 
@@ -1060,6 +1112,7 @@ end;
 
 procedure doUpdateEvent (normal : boolean; window : WindowPtr);
 begin
+   boardOk := false;                       { REV F: an update draws it all }
    if normal then BeginUpdate(window);
    DrawShow;
    if normal then EndUpdate(window)
@@ -1344,6 +1397,7 @@ begin
    lastPoll  := 0;
    lastMvCnt := -1;
    nameTxt   := '';
+   boardOk   := false;                { REV F }
    CnInit;
    for i := 0 to 7 do                 { 50% gray: 170 / 85 alternating }
       if odd(i) then ckrGray[i] := 85 else ckrGray[i] := 170;

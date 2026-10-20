@@ -164,6 +164,10 @@ var
    lastMvCnt : integer;       { the server's move count at the last look }
    nameTxt   : string[8];     { the name being typed }
 
+   { REV F: what each square looked like when it was last drawn }
+   shownSig  : array [0..7, 0..7] of integer;
+   boardOk   : boolean;       { false: draw the whole board next time }
+
 procedure HandleFilerOp (var wantsOpen : boolean);
 
 
