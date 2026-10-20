@@ -1,5 +1,10 @@
 # LisaCheckers changelog
 
+## 0.2 REV E -- 20 Oct 2026
+- Network games: the window is repainted only when something changed (it flashed every few seconds on
+  the 2/10 while waiting); a 'Game over -- you win!' / lose / draw alert at the end; a look at the server
+  that fails part-way no longer leaves an old board on the screen.  Two whole network games in LisaEm.
+- The release floppy opens on the Lisa (the previous one was made on the Reversi floppy).
 ## 0.2 REV D -- 19 Oct 2026
 - After a failed network reply to a move the game no longer freezes: it looks at the server again at once.
   Six network moves in LisaEm against the Pi's server, captures included.

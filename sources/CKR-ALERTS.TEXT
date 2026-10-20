@@ -96,6 +96,18 @@ The game in progress is abandoned.
 Resign this game?^L^L
 Your opponent wins it.
 
+20 note alert
+Game over -- you win!^L^L
+A asks for another game (the colours swap).
+
+21 note alert
+Game over -- your opponent wins this one.^L^L
+A asks for another game (the colours swap).
+
+22 note alert
+Game over -- a draw.^L^L
+A asks for another game (the colours swap).
+
 0
 
 ; ==== MENUS ===============================================================

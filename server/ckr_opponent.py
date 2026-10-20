@@ -1,7 +1,7 @@
 """ckr_opponent.py -- a patient scripted checkers player for testing LisaCheckers' network play: sits at a table
 on the checkers server (default the public one, table 'test') as 'banana', waits, and on its turn plays a legal
 move (a capture that takes the most, otherwise at random), checking the server's board against its own rules.
-After a game it asks for another (colours swap), up to GAMES games.  Ctrl-C leaves the table.
+After a game it asks for another (colours swap) once and waits for the other player, up to GAMES games.  Ctrl-C leaves the table.
     python ckr_opponent.py [base-url] [table] [name] [games]                         18-Oct-2026"""
 import random, sys, time, urllib.request
 import ckrules as R
@@ -32,7 +32,7 @@ def board_of(text):
     return b
 
 
-games, last = 0, None
+games, last, over_seen = 0, None, False
 try:
     while games < GAMES:
         st = get("/state")
@@ -54,10 +54,14 @@ try:
                 r = get("/move/" + R.text(mv))
                 say("played", R.text(mv), "->", r.get("ERROR") or "ok")
         elif st.get("status") == "over":
-            say("GAME OVER:", st.get("result"))
-            games += 1
-            if games < GAMES:
-                get("/again")
+            if not over_seen:                  # 19-Oct: count each game ONCE (it counted every look and left at once)
+                over_seen = True
+                say("GAME OVER:", st.get("result"))
+                games += 1
+                if games < GAMES:
+                    get("/again")              # then wait, however long, for the other player's /again
+        else:
+            over_seen = False
         time.sleep(1.5)
 finally:
     get("/leave")

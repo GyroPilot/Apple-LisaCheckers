@@ -596,10 +596,49 @@ begin
    end
 end;
 
+procedure NetEnd (wasSt : integer);
+{ REV E.  The server's game has just gone over: say who won, as a game  }
+{ against the Lisa does (Tim, 2/10: "no indication of the win").  The   }
+{ winner is the name before ' wins' in the result; none = a draw.        }
+var r, me, who : Str255;
+    j, k       : integer;
+    stop       : boolean;
+begin
+   if (cnStat <> cnOver) or (wasSt = cnOver) or (cnYou = 0) then
+      exit(NetEnd);
+   r := cnResult;
+   if human = ckBlack then
+      me := cnBlack
+   else
+      me := cnWhite;
+   k := pos(' wins', r);
+   if k = 0 then begin
+      NoteAlert(allAlerts, alrtNDraw);
+      exit(NetEnd)
+   end;
+   j := k;                                 { back to the start of the name }
+   stop := false;
+   while not stop do begin                 { no short-circuit: never r[0] }
+      if j <= 1 then
+         stop := true
+      else if r[j - 1] = ' ' then
+         stop := true
+      else
+         j := j - 1
+   end;
+   who := copy(r, j, k - j);
+   if who = me then
+      NoteAlert(allAlerts, alrtNWin)
+   else
+      NoteAlert(allAlerts, alrtNLose)
+end;
+
 function NetAsk (path : Str255) : boolean;
 { One request; the window is redrawn with what came back. }
 var ok : boolean;
+    oSt : integer;                         { REV E }
 begin
+   oSt := cnStat;
    status := 'Talking to the checkers server ...';
    if myWindow <> nil then begin
       SyncPort;
@@ -616,7 +655,68 @@ begin
    if cnErr <> '' then
       status := concat('Server: ', cnErr);
    NetAsk := ok;
-   DrawShow
+   DrawShow;
+   NetEnd(oSt)                             { REV E }
+end;
+
+procedure NetPoll;
+{ REV E.  The idle look at the server (Tim, 2/10, 19-Oct: the window   }
+{ flashed every few seconds).  No 'Talking' line, and only what changed }
+{ is repainted: the window for a new move, turn, state, draw offer or  }
+{ player, the panel alone when only the message line differs.          }
+var ok      : boolean;
+    oMv     : integer;
+    oSt     : integer;
+    oTn     : integer;
+    oDr     : integer;
+    oBl     : Str255;
+    oWh     : Str255;
+    oStatus : Str255;
+    pth     : Str255;
+    oBd     : CkBoard;                     { REV E (night): the board as it was }
+    i       : integer;
+    bdNew   : boolean;
+begin
+   oBd := ckBd;
+   oMv := cnMoves;
+   oSt := cnStat;
+   oTn := cnTurn;
+   oDr := cnDraw;
+   oBl := cnBlack;
+   oWh := cnWhite;
+   oStatus := status;
+   pth := '/state';
+   ok := CnGet(pth);
+   lastPoll := NowSecs;
+   if ok and cnGot then
+      NetSync
+   else if not ok then
+      status := concat('No answer: ', cnWhy)
+   else
+      status := 'The server sent something unexpected.';
+   if cnErr <> '' then
+      status := concat('Server: ', cnErr);
+   if myWindow = nil then
+      exit(NetPoll);
+   bdNew := false;                          { a look that failed part-way changes the count }
+   for i := 1 to 32 do                      { but not the board: the next whole one must  }
+      if ckBd[i] <> oBd[i] then             { repaint (LisaEm, run-ckre, 19-Oct 23:20)     }
+         bdNew := true;
+   if bdNew then
+      DrawShow
+   else if (cnMoves <> oMv) or (cnStat <> oSt) or (cnTurn <> oTn) or (cnDraw <> oDr) then
+      DrawShow
+   else if (cnBlack <> oBl) or (cnWhite <> oWh) then
+      DrawShow
+   else begin
+      if ok and (nPath >= 0) then         { a piece is picked: keep its message }
+         status := oStatus;
+      if status <> oStatus then begin
+         SyncPort;
+         DrawPanel
+      end
+   end;
+   NetEnd(oSt)
 end;
 
 procedure NetSend (var mv : CkMove);
@@ -951,7 +1051,7 @@ begin
    gap := pollGap;
    if nLegal > 0 then gap := 15;
    if NowSecs - lastPoll >= gap then
-      if NetAsk('/state') then ;
+      NetPoll                              { REV E: quietly, repaint only what changed }
 end;
 
 {------------------------------------------------------------------------}

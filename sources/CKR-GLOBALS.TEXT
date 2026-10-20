@@ -101,6 +101,9 @@ const
    alrtKeys   = 17;           { Keys }
    alrtNewG   = 18;           { caution cancel: abandon this game? }
    alrtResign = 19;           { caution cancel: resign this network game? (REV B) }
+   alrtNWin   = 20;           { REV E: a network game is over: you win }
+   alrtNLose  = 21;           {        the other player wins }
+   alrtNDraw  = 22;           {        a draw }
    vwBoard  = 0;              { what the window shows (REV B) }
    vwTables = 1;
    vwName   = 2;
