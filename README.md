@@ -7,9 +7,10 @@ Tool number **419317** in the GyroPilot series. Lisa Pascal, Workshop 3.0, Lisa 
 
 ## Status
 
-**0.2 (REV F) -- released 20 October 2026.**  Tested on a Lisa 2/10: against the Lisa, and a whole network
-game through the table server (41 moves, the game-over alert, Save & Put Away).  Release floppy:
-`releases/LISACHECKERS_0_2.dc42`.
+**1.0 (REV G) -- released 21 October 2026.**  The 0.2 REV F program with the version 1.0: tested on a Lisa 2/10
+(against the Lisa, and a whole network game through the table server: 41 moves, the game-over alert, Save & Put
+Away), and overnight in LisaEm as 1.0 (a 48-move network game, opened from its floppy).  Release floppy:
+`releases/LISACHECKERS_1_0.dc42`.
 
 ## Playing
 

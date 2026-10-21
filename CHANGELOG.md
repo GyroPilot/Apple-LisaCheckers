@@ -1,6 +1,9 @@
 # LisaCheckers changelog
 
-## 0.2 REV F -- 20 Oct 2026 -- RELEASE
+## 1.0 REV G -- 21 Oct 2026 -- RELEASE
+- Version 1.0 (About box 21 October 2026); the program is 0.2 REV F.  A 48-move network game in LisaEm against
+  the Pi's server; opens from its floppy.  The server protocol is documented in PROTOCOL.md.
+## 0.2 REV F -- 20 Oct 2026 -- RELEASE 0.2
 - After a move only the squares that changed are redrawn (no whole-board wipe).
 - Tested on a Lisa 2/10: against the Lisa (level 2), and a whole network game through the Pi's table
   server, with the game-over alert and Save & Put Away.

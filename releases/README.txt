@@ -1,4 +1,4 @@
-LisaCheckers 0.2 for the Apple Lisa Office System       October 2026 (release build REV F)
+LisaCheckers 1.0 for the Apple Lisa Office System       October 2026 (release build REV G)
 American checkers (English draughts).  Tool 419317.
 
 PLAY
@@ -18,6 +18,7 @@ NETWORK
   tables on the checkers server; type a table's number to sit down.  The server keeps the board and
   checks every move; the colours swap each game.  Offer or accept a draw, resign, or ask for another
   game from the Network menu.  At the end an alert says who won.
+  The server's protocol is public (PROTOCOL.md on GitHub): any FujiNet machine can join in.
 
 SOURCE
   Lisa Pascal, Workshop 3.0.  github.com/GyroPilot/Apple-LisaCheckers  (the table server is in
@@ -26,5 +27,5 @@ SOURCE
   and a whole network game through the server.
 
 WHAT'S IN THIS RELEASE
-  LISACHECKERS_0_2.dc42          the release floppy
-  LisaCheckers_0.2_source.zip    Lisa Pascal sources, exec files, and the server
+  LISACHECKERS_1_0.dc42          the release floppy
+  LisaCheckers_1.0_source.zip    Lisa Pascal sources, exec files, and the server
