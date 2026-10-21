@@ -25,6 +25,9 @@ game through the table server (41 moves, the game-over alert, Save & Put Away). 
 
 ## The checkers server
 
+**The protocol is documented in [PROTOCOL.md](PROTOCOL.md)**: plain GETs, text replies, so anyone can write a client in
+any language.
+
 `server/ckr_server.py` -- Python 3, standard library only; one plain GET per request, text replies a FujiNet machine
 can read line by line (the format is in its header). Every player dials out to it, so nobody opens a router port.
 Tim runs it on a Raspberry Pi behind Tailscale Funnel. `server/ckr_peer.py` checks a server by playing whole games;
