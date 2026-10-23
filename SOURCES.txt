@@ -1,4 +1,4 @@
-LisaCheckers 1.0 (REV G) -- what is here
+LisaCheckers 1.1 (REV I) -- what is here
 
 sources/CKR-RULES.TEXT    unit CkrRules: the board, move generation (compulsory captures, multi-jumps, crowning),
                           the search (negamax, alpha-beta, iterative deepening within a position budget)

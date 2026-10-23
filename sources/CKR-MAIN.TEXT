@@ -1191,12 +1191,12 @@ begin
                             nameTxt := '';
                             DrawShow
                          end;
-            miNet9600, miNet19200 :
+            miNet9600, miNet19200 :        { phase 2 (22-Oct): the FujiNet is set too }
                begin
-                  if item = miNet19200 then cnBaud := 19200 else cnBaud := 9600;
-                  if CnSave(myVol) then ;
-                  if cnBaud = 19200 then status := 'Network speed: 19200 baud.'
-                  else status := 'Network speed: 9600 baud.';
+                  status := 'Changing the speed (about 20 seconds) ...';
+                  SyncPort;
+                  DrawPanel;
+                  if item = miNet19200 then CnSetSp(19200, status) else CnSetSp(9600, status);
                   SyncPort;
                   DrawPanel
                end;

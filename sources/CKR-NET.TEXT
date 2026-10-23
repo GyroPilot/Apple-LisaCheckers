@@ -44,6 +44,7 @@ var
    cnTable  : CnNmStr;
    cnName   : CnNmStr;
    cnBaud   : longint;
+   cnVol    : E_Name;         { the tool's volume, from CnLoad (phase 2) }
    cnWhy    : CnLnStr;        { why the last request failed }
    cnRc     : integer;
    cnEcode  : integer;
@@ -77,6 +78,7 @@ function  CnGet   (var path : Str255) : boolean;
 procedure CnLastMv (var mv : CkMove);
 function  CnLoad  (var vol : E_Name) : boolean;
 function  CnSave  (var vol : E_Name) : boolean;
+procedure CnSetSp  (nb : longint; var msg : Str255);
 
 
 IMPLEMENTATION
@@ -88,6 +90,7 @@ begin
    cnTable := '';
    cnName := 'lisa';
    cnBaud := 9600;
+   cnVol := '';
    cnWhy := '';
    cnRc := 0;
    cnEcode := 0;
@@ -249,6 +252,7 @@ var url        : Str255;
     cur        : Str255;
     one        : string[1];
     part       : Str255;
+    old        : longint;
 begin
    CnGet := false;
    cnRc := 0;
@@ -262,6 +266,13 @@ begin
    url := concat(url, concat('&player=', cnName));
    if path = '/tables' then
       url := concat(url, '&dev=1');
+   if not fnFound then begin            { phase 2: which speed answers?  Once per launch. }
+      old := cnBaud;
+      if FnFind(cnBaud) = fnOK then
+         if cnBaud <> old then
+            if length(cnVol) > 0 then
+               if CnSave(cnVol) then ;
+   end;
    if not FnPortUp(cnBaud) then begin
       cnWhy := 'Serial B would not open (is another tool using it?)';
       exit(CnGet)
@@ -395,6 +406,7 @@ var path     : Pathname;
     one      : string[1];
 begin
    CnLoad := false;
+   cnVol := vol;                        { phase 2: for a save from CnGet or CnSetSp }
    path := concat(vol, 'CKRNAME.DATA');
    Sched_Class(schedErr, false);
    OPEN(ec, path, refnum, [DRead]);
@@ -468,6 +480,25 @@ begin
    CLOSE_OBJECT(ec, refnum);
    Sched_Class(schedErr, true);
    if cnEcode < 0 then cnEcode := 0
+end;
+
+
+procedure CnSetSp {nb : longint; var msg : Str255};
+{ Phase 2 (22-Oct): a speed chosen on the menu.  The FujiNet is set too, }
+{ through its web page (FnSetBd), restarted and followed; the choice is  }
+{ kept in the settings file.  The message says how it ended.             }
+var rc, stage : integer;
+begin
+   if nb = cnBaud then begin
+      FnSpdMsg(fnOK, 0, nb, msg);
+      exit(CnSetSp)
+   end;
+   rc := FnSetBd(cnBaud, nb, stage);
+   if stage >= 4 then
+      cnBaud := nb;                    { the FujiNet was told, or is there already }
+   if length(cnVol) > 0 then
+      if CnSave(cnVol) then ;
+   FnSpdMsg(rc, stage, cnBaud, msg)
 end;
 
 end.

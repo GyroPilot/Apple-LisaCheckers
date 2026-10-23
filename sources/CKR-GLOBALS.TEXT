@@ -35,7 +35,7 @@ uses (*$U UnitStd.obj *)   UnitStd,
      (*$U CKR/RULES.OBJ *) CkrRules;
 
 const
-   ckrVersion = 'LisaCheckers 1.0';   { REV G: 1.0 (Tim, 20-Oct) }
+   ckrVersion = 'LisaCheckers 1.1';   { REV I: 1.1 shown (REV H + the version) }
 
    { The window, the same size as Lisa Reversi's: 680 x 300.            }
    winW      = 680;

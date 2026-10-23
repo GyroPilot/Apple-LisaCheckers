@@ -1,5 +1,9 @@
 # LisaCheckers changelog
 
+## 1.1 REV H / REV I -- 22-23 Oct 2026 -- RELEASE (staged)
+- The Network menu's Use 9600 / Use 19200 baud sets the FujiNet too (web page over N:, reset, port again); the
+  first port open of each launch probes for the speed (FnFind) and keeps what answers. FnBus at LisaFuji's REV S
+  level. The one-line result fits the panel. REV I = REV H with the version shown as 1.1. LisaEm-tested 22 Oct.
 ## 1.0 REV G -- 21 Oct 2026 -- RELEASE
 - Version 1.0 (About box 21 October 2026); the program is 0.2 REV F.  A 48-move network game in LisaEm against
   the Pi's server; opens from its floppy.  The server protocol is documented in PROTOCOL.md.
