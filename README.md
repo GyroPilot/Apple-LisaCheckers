@@ -7,6 +7,14 @@ Tool number **419317** in the GyroPilot series. Lisa Pascal, Workshop 3.0, Lisa 
 
 ## Status
 
+**1.2 (REV O) -- released 30 October 2026.** Plays through an **ESPFuji** ESProFile as well as an RS-232 FujiNet:
+when the tool sits on an ESProFile volume that runs ESPFuji (https://github.com/GyroPilot/ESPFuji) it finds the
+mailbox by itself and needs no serial adapter. The first complete game through an ESProFile was played on a Lisa
+2/10 on 29 October (34 moves, against the table server). C sets the Lisa's clock from the network when the clock is
+unset (a Lisa that lost power reads 1980); the polls no longer depend on the clock. Failure lines say why in words.
+Release floppy: `releases/LISACHECKERS_1_2.dc42`. The clock offer and the wording were checked in LisaEm after the
+2/10 game; the mailbox code is the one that played it.
+
 **1.0 (REV G) -- released 21 October 2026.**  The 0.2 REV F program with the version 1.0: tested on a Lisa 2/10
 (against the Lisa, and a whole network game through the table server: 41 moves, the game-over alert, Save & Put
 Away), and overnight in LisaEm as 1.0 (a 48-move network game, opened from its floppy).  Release floppy:

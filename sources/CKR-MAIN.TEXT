@@ -40,6 +40,7 @@ uses (*$U UnitStd.obj *)   UnitStd,
      (*$U WMlCrs.obj *)    WMLCrs,
      (*$U FilerComm.obj *) FilerComm,
      (*$U CKR/RULES.OBJ *) CkrRules,
+     (*$U CKR/TWUNIT.OBJ *) TwcUnit,
      (*$U CKR/FNBUS.OBJ *) FnBus,
      (*$U CKR/NET.OBJ *)   CkrNet,
      (*$U CKR/GLOBALS.OBJ *) CkrGlobals;
@@ -1093,6 +1094,71 @@ begin
    end
 end;
 
+procedure ClockSet;
+{ REV N: C when the Lisa clock is unset: ask the network for the time  }
+{ (the ESPFuji drive or the FujiNet) and set the twin year, as          }
+{ LisaTwinClock does.  Only on request: on a LisaFPGA a clock set may    }
+{ stall (Michael Wottle, 28 Oct 2026, not yet understood).               }
+var y, doy, h, mi, s, d, mo, rc, twin : integer;
+    exact : boolean;
+    nm, part, big : Str255;
+begin
+   status := 'Asking the network for the time ...';
+   DrawShow;
+   rc := fnNoRep;
+   if FnFind(cnBaud) = fnOK then
+      if FnPortUp(cnBaud) then begin
+         rc := FnClock(d, mo, y, h, mi, s);
+         FnPortDn
+      end;
+   if rc <> fnOK then begin
+      status := 'No network time (FujiNet or ESPFuji?): clock not set.';
+      DrawShow;
+      exit(ClockSet)
+   end;
+   if (y < 2024) or (y > 2099) or (mo < 1) or (mo > 12) or (d < 1)
+      or (d > TwDaysIn(y, mo)) or (h < 0) or (h > 23) or (mi < 0) or (mi > 59) then begin
+      status := 'The network has no time yet (WiFi?): clock not set.';
+      DrawShow;
+      exit(ClockSet)
+   end;
+   twin := TwYear(y, exact);
+   doy := TwDayOY(twin, mo, d);
+   if TwSet(twin, doy, h, mi) <> 0 then begin
+      status := 'The Lisa refused the time: clock not set.';
+      DrawShow;
+      exit(ClockSet)
+   end;
+   clockAsk := false;
+   TwDayNm(TwWkDay(twin, mo, d), nm);
+   big := concat('Clock set from the network: ', nm);
+   TwMonNm(mo, nm);
+   big := concat(big, concat(', ', nm));
+   TwNum(d, part);
+   big := concat(big, concat(' ', part));
+   TwNum(twin, part);
+   big := concat(big, concat(', ', part));
+   Tw2Dig(h, part);
+   big := concat(big, concat('  ', part));
+   Tw2Dig(mi, part);
+   big := concat(big, concat(':', part));
+   if length(big) > 78 then big := copy(big, 1, 78);   { copy() past the end gives '' (notes 93) }
+   status := big;
+   DrawShow
+end;
+
+procedure ClockFix;
+{ REV N: at launch.  A Lisa that lost power reads 1980 (the Office      }
+{ System calls it 'not set'); say so and offer C.  The polls themselves  }
+{ no longer need the clock (IdlePoll counts naps).                       }
+var y, doy, h, mi, s : integer;
+begin
+   napCnt := 0;
+   clockAsk := not TwGet(y, doy, h, mi, s);
+   if clockAsk then
+      status := 'Lisa clock not set: C sets it from the network (twin year)'
+end;
+
 procedure IdlePoll;
 { From the idle loop: look at the server every pollGap seconds at a     }
 { table (every 15 while it is your move, to notice a resignation).      }
@@ -1102,8 +1168,12 @@ begin
       exit(IdlePoll);
    gap := pollGap;
    if nLegal > 0 then gap := 15;
-   if NowSecs - lastPoll >= gap then
-      NetPoll                              { REV E: quietly, repaint only what changed }
+   FnNap(100);                          { REV N: count naps too; the Lisa clock may be unset }
+   napCnt := napCnt + 1;
+   if (NowSecs - lastPoll >= gap) or (napCnt >= gap * 10) then begin
+      napCnt := 0;
+      NetPoll                           { REV E: quietly, repaint only what changed }
+   end
 end;
 
 {------------------------------------------------------------------------}
@@ -1222,6 +1292,10 @@ procedure PlainKey (ch : char);
 { H help.  REV B: on the table list, a digit sits down, R looks again, }
 { N names you, Q goes back; at a table, A asks for another game.        }
 begin
+   if clockAsk and ((ch = 'C') or (ch = 'c')) then begin   { REV N }
+      ClockSet;
+      exit(PlainKey)
+   end;
    if viewMd = vwName then begin
       NameKey(ch);
       exit(PlainKey)
@@ -1422,6 +1496,7 @@ begin
       myVol := copy(pcInfo.progpathname, 1, cutAt - 1)
    else
       myVol := '-#12-';
+   FnSetVol(myVol);                     { REV J: where MAILBOX.DATA (an ESPFuji) is looked for }
    if CnLoad(myVol) then ;
 
    InitMP(theHeap, myPrefix, @AlertFailed, alertVerNum,
@@ -1452,6 +1527,7 @@ begin { main program }
    OpenWm;
    Initialize;
 
+   ClockFix;                            { REV N: the Lisa clock, if it was lost }
    repeat
 
       while not (ImActive or toldToDie) do begin
@@ -1474,5 +1550,6 @@ begin { main program }
 
    until toldToDie;
 
+   FnMbDn;                              { REV J: MAILBOX.DATA, if it was open }
    termErr := 0
 end.

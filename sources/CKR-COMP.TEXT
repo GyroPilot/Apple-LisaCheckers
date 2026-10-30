@@ -8,6 +8,7 @@ F{ilemgr}D{elete}CKR/RULES.OBJ  Y{es}
         D{elete}CKR/FNBUS.OBJ  Y{es}
         D{elete}CKR/NET.OBJ  Y{es}
         D{elete}CKR/GLOBALS.OBJ  Y{es}
+        D{elete}CKR/TWUNIT.OBJ  Y{es}
         D{elete}CKR/MAIN.OBJ  Y{es}
         Q{uit}
 ${                                                                          }
@@ -23,6 +24,9 @@ CKR/NET.OBJ
 P{ascal Compile}CKR/GLOBALS.TEXT
 {no listing file - this comment-only line is the [RETURN] answer}
 CKR/GLOBALS.OBJ
+P{ascal Compile}CKR/TWUNIT.TEXT
+{no listing file}
+CKR/TWUNIT.OBJ
 P{ascal Compile}CKR/MAIN.TEXT
 {no listing file}
 CKR/MAIN.OBJ

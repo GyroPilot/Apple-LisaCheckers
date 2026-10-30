@@ -252,6 +252,7 @@ var url        : Str255;
     cur        : Str255;
     one        : string[1];
     part       : Str255;
+    mbWhy      : Str255;      { REV N: why the mailbox was not used }
     old        : longint;
 begin
    CnGet := false;
@@ -273,6 +274,15 @@ begin
             if length(cnVol) > 0 then
                if CnSave(cnVol) then ;
    end;
+   if fnVia = fnViaMb then           { REV N: in words a player can act on }
+      mbWhy := ''
+   else begin
+      FnNum(fnMbEc, part);
+      if fnMbEc = 0 then
+         mbWhy := concat('mailbox on ', concat(fnVol, ' did not answer: ESPFuji?'))
+      else
+         mbWhy := concat('no mailbox on ', concat(fnVol, concat(' (ec ', concat(part, '): put it beside ESPFuji'))))
+   end;
    if not FnPortUp(cnBaud) then begin
       cnWhy := 'Serial B would not open (is another tool using it?)';
       exit(CnGet)
@@ -281,7 +291,12 @@ begin
    rc := FnNOpen(url, 4, 0);
    if rc <> fnOK then begin
       cnRc := rc;
-      cnWhy := 'the FujiNet did not take the request';
+      if length(mbWhy) = 0 then
+         cnWhy := 'the FujiNet did not take the request'
+      else begin
+         if length(mbWhy) > 58 then mbWhy := copy(mbWhy, 1, 58);   { REV N: copy() past the end gives '' (notes 93) }
+         cnWhy := mbWhy
+      end;
       rc := FnNClos;
       FnPortDn;
       exit(CnGet)

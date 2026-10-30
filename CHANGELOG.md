@@ -1,5 +1,15 @@
 # LisaCheckers changelog
 
+## 1.2 REV K-O -- 28-30 Oct 2026 -- RELEASE (REV O = REV N with the version 1.2)
+- The ESProFile mailbox as a third back end beside the RS-232 FujiNet and LisaNet: FnBus finds MAILBOX.DATA on the
+  tool's own volume (an ESPFuji drive) and uses it; otherwise Serial B as before. The first complete game through an
+  ESProFile: Lisa 2/10, 29 Oct 2026, 34 moves against the table server. (REV K-L)
+- A Lisa whose clock is unset (12:00 am 01/01/80 after a power loss) stalled the network polls, which were timed by
+  GET_TIME; polls are nap-counted now. C offers to set the Lisa's clock from the network (opt-in: never unasked,
+  after a LisaFPGA report that SetDateTime does not take there). TwcUnit (the twin-year clock) joins the sources
+  as CKR-TWUNIT.TEXT. (REV M)
+- Failure lines say why in words: "no mailbox on -#13- (ec 948): put it beside ESPFuji" / "mailbox did not answer:
+  ESPFuji?"; COPY past the end of a short string returns '' on the Lisa, so truncations are guarded. (REV N)
 ## 1.1 REV H / REV I -- 22-23 Oct 2026 -- RELEASE (staged)
 - The Network menu's Use 9600 / Use 19200 baud sets the FujiNet too (web page over N:, reset, port again); the
   first port open of each launch probes for the speed (FnFind) and keeps what answers. FnBus at LisaFuji's REV S

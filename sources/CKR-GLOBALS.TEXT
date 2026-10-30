@@ -35,7 +35,7 @@ uses (*$U UnitStd.obj *)   UnitStd,
      (*$U CKR/RULES.OBJ *) CkrRules;
 
 const
-   ckrVersion = 'LisaCheckers 1.1';   { REV I: 1.1 shown (REV H + the version) }
+   ckrVersion = 'LisaCheckers 1.2';   { REV O: 1.2 = REV N (the ESProFile mailbox, the clock offer) }
 
    { The window, the same size as Lisa Reversi's: 680 x 300.            }
    winW      = 680;
@@ -154,6 +154,8 @@ var
    haveLisa  : boolean;
    nodes     : longint;       { positions the Lisa looked at, last move }
    status    : Str255;        { the message line in the panel }
+   napCnt    : integer;       { REV N: idle naps since the last look at the server }
+   clockAsk  : boolean;       { REV N: the Lisa clock is unset; C sets it from the network }
    idleCnt   : longint;
 
    { the network game (REV B) }
